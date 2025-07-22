@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NeoShop - Modern E-Commerce</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #eaf6ff;
+      color: #333;
+    }
+    header {
+      background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
+      color: white;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+    header h1 {
+      font-size: 26px;
+      font-weight: 600;
+    }
+    .nav button {
+      background: #ff6600;
+      color: #fff;
+      border: none;
+      padding: 10px 16px;
+      margin-left: 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .nav button:hover {
+      background: #e05500;
+    }
+    .page {
+      display: none;
+      padding: 2rem;
+    }
+    .active {
+      display: block;
+    }
+    .filters {
+      margin-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .filters input,
+    .filters select {
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 20px;
+    }
+    .product {
+      background: #fff;
+      padding: 1rem;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s;
+    }
+    .product:hover {
+      transform: scale(1.03);
+    }
+    .product img {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+      border-radius: 8px;
+    }
+    .product h4 {
+      margin: 0.8rem 0 0.3rem;
+    }
+    button.primary {
+      background: #0f9d58;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 5px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+    button.primary:hover {
+      background: #0b7e46;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background: white;
+      padding: 2rem;
+      border-radius: 10px;
+      width: 350px;
+      position: relative;
+    }
+    .close {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 22px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>NeoShop</h1>
+    <div class="nav">
+      <button onclick="showPage('products')">🛍️ Products</button>
+      <button onclick="showPage('cart')">🛒 Cart</button>
+      <button onclick="showLogin()">🔑 Login</button>
+      <button id="adminBtn" style="display:none;" onclick="showPage('admin')">⚙️ Admin</button>
+    </div>
+  </header>
+  <div id="loginModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeLogin()">&times;</span>
+      <h3>Login</h3>
+      <input type="text" id="username" placeholder="Enter username">
+      <button onclick="login()">Login</button>
+    </div>
+  </div>
+  <div id="products" class="page active">
+    <h2>Shop All Products</h2>
+    <div class="filters">
+      <input type="text" id="search" placeholder="Search..." oninput="renderProducts()"/>
+      <select id="categoryFilter" onchange="renderProducts()">
+        <option value="">All Categories</option>
+      </select>
+      <select id="priceFilter" onchange="renderProducts()">
+        <option value="">All Prices</option>
+        <option value="0-50">$0 - $50</option>
+        <option value="50-150">$50 - $150</option>
+        <option value="150-1000">$150+</option>
+      </select>
+      <select id="ratingFilter" onchange="renderProducts()">
+        <option value="">All Ratings</option>
+        <option value="4">4★+</option>
+        <option value="3">3★+</option>
+      </select>
+    </div>
+    <div class="product-grid" id="productList"></div>
+  </div>
+  <div id="detail" class="page">
+    <button onclick="showPage('products')">Back</button>
+    <h2 id="detailName"></h2>
+    <img id="detailImage" src="" style="width:300px"/>
+    <p id="detailDescription"></p>
+    <p>Price: $<span id="detailPrice"></span></p>
+    <p>Rating: <span id="detailRating"></span> stars</p>
+    <button onclick="addToCart()">Add to Cart</button>
+  </div>
+  <div id="cart" class="page">
+    <h2>Shopping Cart</h2>
+    <div id="cartItems"></div>
+    <button onclick="showPage('checkout')">Checkout</button>
+    <button onclick="clearCart()">Clear Cart</button>
+  </div>
+  <div id="checkout" class="page">
+    <h2>Checkout</h2>
+    <div id="checkoutDetails"></div>
+    <button onclick="confirmOrder()">Confirm Order</button>
+  </div>
+  <div id="order" class="page">
+    <h2>Order Confirmed 🎉</h2>
+    <p>Thank you for your purchase.</p>
+    <button onclick="showPage('products')">Back to Products</button>
+  </div>
+  <div id="admin" class="page">
+    <h2>Admin Dashboard</h2>
+    <button onclick="openForm()">Add Product</button>
+    <div id="adminList"></div>
+  </div>
+  <div id="productModal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeForm()">&times;</span>
+      <h3 id="formTitle">Add/Edit Product</h3>
+      <input type="hidden" id="formId"/>
+      <input type="text" id="formName" placeholder="Name">
+      <input type="text" id="formDescription" placeholder="Description">
+      <input type="number" id="formPrice" placeholder="Price">
+      <input type="number" id="formRating" placeholder="Rating (1-5)" min="1" max="5">
+      <input type="text" id="formCategory" placeholder="Category">
+      <button onclick="saveProduct()">Save</button>
+    </div>
+  </div>
+  <script>
+    let products = JSON.parse(localStorage.getItem('products')) || [
+      {id:1, name:"Laptop", description:"Powerful Laptop", price:700, rating:4.5, category:"Electronics"},
+      {id:2, name:"T-Shirt", description:"Cotton t-shirt", price:30, rating:4.0, category:"Clothing"},
+      {id:3, name:"Headphones", description:"Noise cancelling", price:80, rating:4.7, category:"Electronics"},
+    ];
+    let cart = JSON.parse(localStorage.getItem('cart')) || [];
+    let selectedProduct = null;
+    let isAdmin = false;
+    function showPage(page) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById(page).classList.add('active');
+      if (page === 'products') renderProducts();
+      if (page === 'cart') showCart();
+      if (page === 'checkout') renderCheckout();
+      if (page === 'admin') renderAdmin();
+    }
+    function renderProducts() {
+      const search = document.getElementById('search').value.toLowerCase();
+      const catFilter = document.getElementById('categoryFilter').value;
+      const priceFilter = document.getElementById('priceFilter').value;
+      const ratingFilter = document.getElementById('ratingFilter').value;
+      const list = document.getElementById('productList');
+      list.innerHTML = "";
+      let cats = new Set();
+      products.forEach(p => cats.add(p.category));
+      const catSelect = document.getElementById('categoryFilter');
+      if (catSelect.options.length === 1) {
+        [...cats].forEach(cat => {
+          const option = document.createElement('option');
+          option.value = cat;
+          option.textContent = cat;
+          catSelect.appendChild(option);
+        });
+      }
+      let filtered = products.filter(p => {
+        return (p.name.toLowerCase().includes(search) || p.description.toLowerCase().includes(search)) &&
+          (catFilter === "" || p.category === catFilter) &&
+          (priceFilter === "" || (
+            p.price >= +priceFilter.split("-")[0] &&
+            (priceFilter.split("-")[1] ? p.price <= +priceFilter.split("-")[1] : true)
+          )) &&
+          (ratingFilter === "" || p.rating >= +ratingFilter);
+      });
+      filtered.forEach(p => {
+        const div = document.createElement('div');
+        div.className = 'product';
+        div.innerHTML = `
+          <img src="https://via.placeholder.com/300x160?text=${encodeURIComponent(p.name)}" />
+          <h4>${p.name}</h4>
+          <p>$${p.price}</p>
+          <p>${p.rating}★</p>
+          <button class="primary" onclick="viewDetail(${p.id})">View</button>
+        `;
+        list.appendChild(div);
+      });
+    }
+    function viewDetail(id) {
+      selectedProduct = products.find(p => p.id === id);
+      document.getElementById('detailName').textContent = selectedProduct.name;
+      document.getElementById('detailImage').src = `https://via.placeholder.com/300?text=${encodeURIComponent(selectedProduct.name)}`;
+      document.getElementById('detailDescription').textContent = selectedProduct.description;
+      document.getElementById('detailPrice').textContent = selectedProduct.price;
+      document.getElementById('detailRating').textContent = selectedProduct.rating;
+      showPage('detail');
+    }
+    function addToCart() {
+      cart.push(selectedProduct);
+      localStorage.setItem('cart', JSON.stringify(cart));
+      alert("Added to cart!");
+    }
+    function showCart() {
+      const div = document.getElementById('cartItems');
+      div.innerHTML = "";
+      const map = {};
+      cart.forEach(p => {
+        if (!map[p.id]) map[p.id] = {...p, qty:0};
+        map[p.id].qty++;
+      });
+      for (let id in map) {
+        const item = map[id];
+        div.innerHTML += `<p>${item.name} - ${item.qty} × $${item.price} = $${(item.qty * item.price).toFixed(2)}</p>`;
+      }
+    }
+    function renderCheckout() {
+      const div = document.getElementById('checkoutDetails');
+      div.innerHTML = "";
+      let total = 0;
+      cart.forEach(p => total += p.price);
+      div.innerHTML = `<p>Total: $${total.toFixed(2)}</p>`;
+    }
+    function confirmOrder() {
+      alert("Order confirmed!");
+      cart = [];
+      localStorage.setItem('cart', JSON.stringify(cart));
+      showPage('order');
+    }
+    function clearCart() {
+      cart = [];
+      localStorage.setItem('cart', JSON.stringify(cart));
+      showCart();
+    }
+    function showLogin() {
+      document.getElementById('loginModal').style.display = 'flex';
+    }
+    function closeLogin() {
+      document.getElementById('loginModal').style.display = 'none';
+    }
+    function login() {
+      const user = document.getElementById('username').value;
+      isAdmin = user.toLowerCase() === 'admin';
+      document.getElementById('adminBtn').style.display = isAdmin ? 'inline-block' : 'none';
+      alert(`Logged in as ${isAdmin ? "Admin" : "User"}`);
+      closeLogin();
+    }
+    function renderAdmin() {
+      const div = document.getElementById('adminList');
+      div.innerHTML = "";
+      products.forEach(p => {
+        div.innerHTML += `
+          <p><strong>${p.name}</strong> - $${p.price} [${p.category}]
+          <button onclick="editProduct(${p.id})">Edit</button>
+          <button onclick="deleteProduct(${p.id})">Delete</button></p>`;
+      });
+    }
+    function openForm() {
+      document.getElementById('formId').value = "";
+      document.getElementById('productModal').style.display = 'flex';
+      document.getElementById('formTitle').textContent = "Add Product";
+      document.getElementById('formName').value = "";
+      document.getElementById('formDescription').value = "";
+      document.getElementById('formPrice').value = "";
+      document.getElementById('formRating').value = "";
+      document.getElementById('formCategory').value = "";
+    }
+    function closeForm() {
+      document.getElementById('productModal').style.display = 'none';
+    }
+    function editProduct(id) {
+      const p = products.find(p => p.id === id);
+      openForm();
+      document.getElementById('formId').value = p.id;
+      document.getElementById('formName').value = p.name;
+      document.getElementById('formDescription').value = p.description;
+      document.getElementById('formPrice').value = p.price;
+      document.getElementById('formRating').value = p.rating;
+      document.getElementById('formCategory').value = p.category;
+      document.getElementById('formTitle').textContent = "Edit Product";
+    }
+    function saveProduct() {
+      const id = document.getElementById('formId').value;
+      const name = document.getElementById('formName').value;
+      const desc = document.getElementById('formDescription').value;
+      const price = parseFloat(document.getElementById('formPrice').value);
+      const rating = parseFloat(document.getElementById('formRating').value);
+      const category = document.getElementById('formCategory').value;
+      if (!name || !desc || isNaN(price) || isNaN(rating) || !category) {
+        alert("Please fill all fields correctly");
+        return;
+      }
+      if (id) {
+        const index = products.findIndex(p => p.id == id);
+        products[index] = { id: +id, name, description: desc, price, rating, category };
+      } else {
+        const newId = products.length ? Math.max(...products.map(p => p.id)) + 1 : 1;
+        products.push({ id: newId, name, description: desc, price, rating, category });
+      }
+      localStorage.setItem('products', JSON.stringify(products));
+      closeForm();
+      renderAdmin();
+    }
+    function deleteProduct(id
